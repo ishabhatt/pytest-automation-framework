@@ -1,0 +1,19 @@
+# Core testing tools
+pytest==7.4.4
+selenium==4.20.0
+
+# Reporting
+allure-pytest==2.13.3
+
+# HTML reporting with screenshot and extras
+pytest-html==3.2.0
+py==1.11.0  # Required for py.xml 
+
+# Optional: For advanced parallel test runs
+pytest-xdist==3.5.0
+
+# Optional: Retry logic
+pytest-rerunfailures==13.0
+
+# Optional: Load config from YAML/JSON
+PyYAML==6.0.1
