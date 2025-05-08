@@ -1,0 +1,56 @@
+# Use Python as base
+FROM python:3.9-slim
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+	wget \
+	unzip \
+	gnupg \
+	curl \
+	jq \
+	ca-certificates \
+	fonts-liberation \
+	libnss3 \
+	libxss1 \
+	libappindicator3-1 \
+	libasound2 \
+	libatk-bridge2.0-0 \
+	libatk1.0-0 \
+	libgtk-3-0 \
+	libx11-xcb1 \
+	xdg-utils \
+	python3-setuptools python3-distutils python3-venv \
+	&& rm -rf /var/lib/apt/lists/*
+
+
+# Install Google Chrome
+RUN curl -fsSL https://dl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/google-chrome.gpg && \
+	echo "deb [arch=amd64 signed-by=/usr/share/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list && \
+	apt-get update && apt-get install -y google-chrome-stable
+
+# Install ChromeDriver (match Chrome version)
+RUN CHROME_VERSION=$(google-chrome --version | awk '{print $3}') && \
+	DRIVER_VERSION=$(curl -s https://googlechromelabs.github.io/chrome-for-testing/known-good-versions-with-downloads.json | jq -r --arg ver "$CHROME_VERSION" '.versions[] | select(.version==$ver) | .downloads.chromedriver[] | select(.platform=="linux64") | .url') && \
+	wget -O /tmp/chromedriver.zip "$DRIVER_VERSION" && \
+	unzip /tmp/chromedriver.zip -d /tmp/chromedriver && \
+	mv /tmp/chromedriver/chromedriver-linux64/chromedriver /usr/local/bin/chromedriver && \
+	chmod +x /usr/local/bin/chromedriver && \
+	rm -rf /tmp/chromedriver /tmp/chromedriver.zip
+
+# Set environment variables
+ENV CHROME_BIN=/usr/bin/google-chrome
+ENV PATH=$PATH:/usr/local/bin
+
+# Set work directory
+WORKDIR /app
+
+# Copy requirements files
+COPY ./requirements.txt /app/requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+ENV PYTHONPATH=/app
+
+# Run tests with HTML report
+CMD ["pytest"]
